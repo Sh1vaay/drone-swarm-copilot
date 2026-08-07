@@ -101,6 +101,21 @@ func (sm *SwarmManager) lastParsedIntentLocked() core.ParsedIntent {
 	return sm.lastParsedIntent
 }
 
+// SetStrategyMode updates StrategyMode under the write lock, preventing the
+// data race between ServeWebSocket (writer) and RunPeriodicElection (reader).
+func (sm *SwarmManager) SetStrategyMode(mode string) {
+	sm.Lock()
+	defer sm.Unlock()
+	sm.StrategyMode = mode
+}
+
+// GetStrategyMode reads StrategyMode under the read lock.
+func (sm *SwarmManager) GetStrategyMode() string {
+	sm.RLock()
+	defer sm.RUnlock()
+	return sm.StrategyMode
+}
+
 func (sm *SwarmManager) SetPendingIntent(intent core.ParsedIntent) {
 	sm.Lock()
 	defer sm.Unlock()
@@ -205,9 +220,12 @@ func (sm *SwarmManager) RunPeriodicElection() {
 	}
 
 	intent := sm.lastParsedIntentLocked()
+	// StrategyMode is read here while holding sm.Lock(), consistent with
+	// SetStrategyMode which also acquires the lock before writing.
+	mode := sm.StrategyMode
 	squadTasks := make(map[string]map[string]string)
 	for squadID, states := range squadStates {
-		if sm.StrategyMode == "AUTO" && len(intent.RoleAssignments) > 0 {
+		if mode == "AUTO" && len(intent.RoleAssignments) > 0 {
 			squadTasks[squadID] = normalizeRoleAssignments(intent.RoleAssignments, states)
 		} else {
 			squadTasks[squadID] = formation.AllocateMissionTasks(intent.Action, states)

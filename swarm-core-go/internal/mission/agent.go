@@ -137,25 +137,25 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 			if radius <= 0 {
 				radius = 3.0
 			}
-			
+
 			var nearestTarget *core.Target
 			minDistSq := math.MaxFloat64
 			for _, t := range globalState.World.Targets {
 				dx := a.Position.X - t.X
 				dy := a.Position.Y - t.Y
 				distSq := dx*dx + dy*dy
-				
+
 				if distSq < 64.0 && distSq < minDistSq {
 					minDistSq = distSq
 					targetCopy := t
 					nearestTarget = &targetCopy
 				}
-				
+
 				if distSq < 9.0 {
 					a.NewMemories = append(a.NewMemories, core.MemoryPoint{X: t.X, Y: t.Y, Z: t.Z, Type: "TARGET"})
 				}
 			}
-			
+
 			var neighbors []core.AgentSnapshot
 			for id, snap := range globalState.OtherAgents {
 				if id != a.ID && snap.SquadID == globalState.MySquadID && snap.MissionTask == "MAPPING" {
@@ -163,7 +163,7 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 				}
 			}
 			a.Target = a.computeBoidsTarget(neighbors, radius, altitude)
-			
+
 			if nearestTarget != nil {
 				dx := nearestTarget.X - a.Position.X
 				dy := nearestTarget.Y - a.Position.Y
@@ -173,7 +173,7 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 					a.Target.Y += (dy / dist) * 1.5
 				}
 			}
-			
+
 			a.Target = a.applyObstacleRepulsion(a.Target, globalState)
 			return
 		} else if task == "SEARCH" {
@@ -182,16 +182,16 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 			if radius <= 0 {
 				radius = 8.0
 			}
-			
+
 			var neighbors []core.AgentSnapshot
 			for id, snap := range globalState.OtherAgents {
 				if id != a.ID && snap.SquadID == globalState.MySquadID && snap.MissionTask == "SEARCH" {
 					neighbors = append(neighbors, snap)
 				}
 			}
-			
+
 			a.Target = a.computeBoidsTarget(neighbors, radius, altitude)
-			
+
 			for _, n := range neighbors {
 				dx := a.Position.X - n.Position.X
 				dy := a.Position.Y - n.Position.Y
@@ -201,12 +201,12 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 					a.Target.Y += (dy / dist) * 2.0
 				}
 			}
-			
+
 			a.Target = a.applyObstacleRepulsion(a.Target, globalState)
 			return
 		} else if task == "TRACK" {
 			altitude := 3.0
-			
+
 			var trackedTarget *core.Target
 			minDistSq := math.MaxFloat64
 			for _, t := range globalState.World.Targets {
@@ -218,7 +218,7 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 					targetCopy := t
 					trackedTarget = &targetCopy
 				}
-				
+
 				if distSq < 9.0 {
 					a.NewMemories = append(a.NewMemories, core.MemoryPoint{X: t.X, Y: t.Y, Z: t.Z, Type: "TARGET"})
 				}
@@ -229,22 +229,22 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 				predictionFactor := 15.0
 				interceptX := trackedTarget.X + trackedTarget.Velocity.X*dt*predictionFactor
 				interceptY := trackedTarget.Y + trackedTarget.Velocity.Y*dt*predictionFactor
-				
+
 				a.Target = core.Waypoint{
 					X: interceptX,
 					Y: interceptY,
 					Z: altitude,
 				}
-				
+
 				var neighbors []core.AgentSnapshot
 				for id, snap := range globalState.OtherAgents {
 					if id != a.ID && snap.SquadID == globalState.MySquadID && snap.MissionTask == "TRACK" {
 						neighbors = append(neighbors, snap)
 					}
 				}
-				
+
 				a.Target = a.computeBoidsTarget(neighbors, 2.0, altitude)
-				
+
 				dx := interceptX - a.Position.X
 				dy := interceptY - a.Position.Y
 				dist := math.Sqrt(dx*dx + dy*dy)
@@ -255,7 +255,7 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 			} else {
 				a.Target = core.Waypoint{X: a.Position.X, Y: a.Position.Y, Z: altitude}
 			}
-			
+
 			a.Target = a.applyObstacleRepulsion(a.Target, globalState)
 			return
 		}
@@ -263,7 +263,11 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 
 	isLeader := globalState.LeaderID == a.ID
 
-	if intent.Action == "flock" || intent.Action == "FLOCK" || (!isLeader && useGeminiCoords) {
+	// Only enter flocking mode when the intent is explicitly FLOCK.
+	// Previously, the extra clause `(!isLeader && useGeminiCoords)` caused non-leader drones
+	// to flock for any Gemini-coordinated intent (e.g. CIRCLE, LINE), overriding their
+	// formation positions - a behavioural bug that ignored the actual intent action.
+	if intent.Action == "flock" || intent.Action == "FLOCK" {
 		radius := intent.Radius
 		if radius <= 0 {
 			radius = 3.0
@@ -272,7 +276,7 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 		if altitude <= 0 {
 			altitude = 2.5
 		}
-		
+
 		var neighbors []core.AgentSnapshot
 		for id, snap := range globalState.OtherAgents {
 			if id != a.ID && snap.SquadID == globalState.MySquadID {
@@ -307,7 +311,7 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 		}
 
 		offsets := formation.ComputeFormationOffsets(intent.Action, globalState.ActiveTotalDrones, radius)
-		
+
 		idx := globalState.ActiveDroneIndex
 		if idx < 0 || idx >= len(offsets) {
 			idx = 0

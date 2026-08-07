@@ -39,9 +39,12 @@ func VerifyProximityBreach(x1, y1, z1, x2, y2, z2, velocity float64) (bool, core
 }
 
 // CheckFlightBoundaries verifies altitude limits using DefaultEnvelope.
+// Uses MinGroundZ as the lower bound so drones at ground-level spawn altitude
+// (0.05m) are not incorrectly flagged. MinAltitudeM (0.20m) is the sustained
+// flight target, not the absolute coordinate floor.
 func CheckFlightBoundaries(alt float64) (bool, string) {
 	env := core.DefaultEnvelope
-	if alt < env.MinAltitudeM {
+	if alt < env.MinGroundZ {
 		return false, "Altitude boundary breach: below minimum safety limit (20cm)"
 	}
 	if alt > env.MaxAltitudeM {

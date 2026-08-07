@@ -84,7 +84,7 @@ type AgentSnapshot struct {
 }
 
 // ParsedIntent holds the fully structured swarm command produced by Gemini AI.
-// When Positions is non-empty, each entry maps directly to a drone by index —
+// When Positions is non-empty, each entry maps directly to a drone by index -
 // the server uses those coordinates instead of the formation solver.
 type ParsedIntent struct {
 	Action          string            `json:"action"`

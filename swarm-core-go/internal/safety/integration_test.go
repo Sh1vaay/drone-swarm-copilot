@@ -22,25 +22,32 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 	// GOAL 1: Natural Language Voice-Command parsing (Gemini Live)
 	// =========================================================================
 	t.Run("Gemini Live Natural Language Intent Parser", func(t *testing.T) {
-		// ParseCommandIntent is now a safe-only HOLD fallback.
-		// All real NLP is done by ParseIntentWithGemini (requires live API).
-		// Verify the safe fallback always returns HOLD for any input.
+		// ParseCommandIntent is a deterministic keyword-map parser used as a Gemini fallback.
+		// It maps known keywords (sweep, land, return) to structured intents.
+		// Unknown input falls back to HOLD.
+
+		// "sweep" keyword -> SWEEP with sector target extracted
 		intent1 := intelligence.ParseCommandIntent("sweep sector alpha")
-		if intent1.Action != "HOLD" {
-			t.Errorf("Safe fallback must always be HOLD, got %+v", intent1)
+		if intent1.Action != "SWEEP" {
+			t.Errorf("Expected SWEEP for sweep command, got %+v", intent1)
+		}
+		if intent1.Target != "alpha" {
+			t.Errorf("Expected target 'alpha' for 'sweep sector alpha', got %q", intent1.Target)
 		}
 
+		// Unknown keyword -> HOLD
 		intent2 := intelligence.ParseCommandIntent("hold fleet position")
 		if intent2.Action != "HOLD" {
-			t.Errorf("Safe fallback must always be HOLD, got %+v", intent2)
+			t.Errorf("Expected HOLD for unrecognised command, got %+v", intent2)
 		}
 
+		// "land" / "return" keywords -> LAND
 		intent3 := intelligence.ParseCommandIntent("return and land")
-		if intent3.Action != "HOLD" {
-			t.Errorf("Safe fallback must always be HOLD, got %+v", intent3)
+		if intent3.Action != "LAND" {
+			t.Errorf("Expected LAND for return/land command, got %+v", intent3)
 		}
 
-		// Gibberish also returns HOLD
+		// Completely unrecognised input -> HOLD
 		intentFallback := intelligence.ParseCommandIntent("some completely unrecognized gibberish")
 		if intentFallback.Action != "HOLD" {
 			t.Errorf("NLP Fallback failed: expected HOLD; got %+v", intentFallback)
@@ -188,10 +195,10 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 			t.Errorf("Escape repulsion vector calculation failed: expected Y = -1.0; got %+v", escape)
 		}
 
-		// 3. Altimeter minimum lock
-		safe, err := safety.CheckFlightBoundaries(0.15) // below 20cm
+		// 3. Altimeter minimum lock (MinGroundZ = 0.05m; 0.04m is below it)
+		safe, err := safety.CheckFlightBoundaries(0.04) // below 5cm MinGroundZ
 		if safe || err == "" {
-			t.Error("Altimeter Lock failed: accepted unsafe altitude below 20cm")
+			t.Error("Altimeter Lock failed: accepted unsafe altitude below MinGroundZ (5cm)")
 		}
 
 		safe, err = safety.CheckFlightBoundaries(1.5) // safe

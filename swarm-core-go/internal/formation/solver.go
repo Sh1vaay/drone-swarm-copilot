@@ -22,7 +22,7 @@ func SmoothWaypoint(current, target core.Waypoint, alpha float64) core.Waypoint 
 }
 
 // ComputeFormationOffsets returns target 3D coordinate offsets for N drones.
-// All formations are generative — they work for any drone count.
+// All formations are generative - they work for any drone count.
 // shape is case-insensitive and maps to Gemini action names.
 func ComputeFormationOffsets(shape string, numDrones int, radius float64) []core.Waypoint {
 	offsets := make([]core.Waypoint, numDrones)

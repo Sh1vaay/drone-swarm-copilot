@@ -222,17 +222,17 @@ func ServeWebSocket(w http.ResponseWriter, r *http.Request) {
 
 		lowerCmd := strings.ToLower(strings.TrimSpace(cmd.Command))
 		if lowerCmd == "mode manual" || lowerCmd == "manual mode" {
-			Swarm.StrategyMode = "MANUAL"
+			Swarm.SetStrategyMode("MANUAL") // guarded by SwarmManager mutex
 			log.Println("Strategy mode: MANUAL")
 			continue
 		}
 		if lowerCmd == "mode auto" || lowerCmd == "auto mode" {
-			Swarm.StrategyMode = "AUTO"
+			Swarm.SetStrategyMode("AUTO") // guarded by SwarmManager mutex
 			log.Println("Strategy mode: AUTO")
 			continue
 		}
 
-		if Swarm.StrategyMode == "MANUAL" {
+		if Swarm.GetStrategyMode() == "MANUAL" {
 			if lowerCmd == "approve" || lowerCmd == "execute plan" || lowerCmd == "execute" {
 				pending := Swarm.GetPendingIntent()
 				if pending != nil {
@@ -260,7 +260,7 @@ func ServeWebSocket(w http.ResponseWriter, r *http.Request) {
 		cancel()
 		log.Printf("Gemini intent: %s", intelligence.RedactForLog(intent))
 
-		if Swarm.StrategyMode == "MANUAL" {
+		if Swarm.GetStrategyMode() == "MANUAL" {
 			Swarm.SetPendingIntent(intent)
 			Registry.Broadcast(IntentBroadcast{
 				Type: "intent_update", Action: "HOLD",

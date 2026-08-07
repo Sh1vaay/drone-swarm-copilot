@@ -61,7 +61,10 @@ func init() {
 			{ID: "Outpost-Charlie", Type: "STRUCTURE", X: 0, Y: 15, Z: 0.0},
 		},
 		Weather: core.Weather{WindSpeed: 0.5, WindDirX: 1.0, WindDirY: 0.2},
-		Terrain: core.Terrain{MinAltitude: env.MinAltitudeM, MaxAltitude: env.MaxAltitudeM},
+		// MinGroundZ (0.05m) is the absolute physical floor used by the agent physics engine.
+		// MinAltitudeM (0.20m) is the sustained-flight hover target, not the coordinate floor -
+		// using MinAltitudeM here would prevent the physics clamp from ever letting drones land.
+		Terrain: core.Terrain{MinAltitude: env.MinGroundZ, MaxAltitude: env.MaxAltitudeM},
 	}
 }
 
