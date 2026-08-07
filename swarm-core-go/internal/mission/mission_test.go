@@ -2,7 +2,7 @@ package mission
 
 import (
 	"testing"
-	
+
 	"swarm-core-go/internal/formation"
 )
 

@@ -93,7 +93,7 @@ type ParsedIntent struct {
 	Altitude        float64           `json:"altitude,omitempty"`
 	Speed           float64           `json:"speed,omitempty"`
 	Count           int               `json:"count,omitempty"`
-	Positions       []DronePosition   `json:"positions,omitempty"` // Gemini-computed coordinates
+	Positions       []DronePosition   `json:"positions,omitempty"`        // Gemini-computed coordinates
 	RoleAssignments map[string]string `json:"role_assignments,omitempty"` // Gemini-computed tactical roles
 	PlanDescription string            `json:"plan_description,omitempty"` // AI explanation of the strategy
 }

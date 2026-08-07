@@ -2,7 +2,7 @@ package safety
 
 import (
 	"math"
-	
+
 	"swarm-core-go/internal/core"
 )
 

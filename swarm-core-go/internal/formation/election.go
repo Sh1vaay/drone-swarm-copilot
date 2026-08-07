@@ -26,7 +26,6 @@ func ElectSwarmLeader(drones []core.MockDroneState) string {
 			// 30% Trust Score
 			// 20% Communication Quality
 			// 10% Proximity (Penalized by distance from center)
-			
 			score := (0.40 * normBattery) +
 				(0.30 * d.TrustScore) +
 				(0.20 * d.CommQuality) -

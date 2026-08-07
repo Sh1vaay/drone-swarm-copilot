@@ -14,7 +14,7 @@ func TestCalculateSeparationThreshold(t *testing.T) {
 		{"Low Speed", 1.5, 0.5},
 		{"Threshold Speed", 2.0, 0.5},
 		{"High Speed Moderate", 4.0, 1.0}, // 50cm + 25cm * (4.0 - 2.0) = 1.0m
-		{"Extreme Speed", 6.0, 1.5},        // 50cm + 25cm * (6.0 - 2.0) = 1.5m
+		{"Extreme Speed", 6.0, 1.5},       // 50cm + 25cm * (6.0 - 2.0) = 1.5m
 	}
 
 	for _, tt := range tests {

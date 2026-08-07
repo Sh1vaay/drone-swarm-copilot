@@ -3,7 +3,7 @@ package formation
 import (
 	"math"
 	"testing"
-	
+
 	"swarm-core-go/internal/core"
 )
 
