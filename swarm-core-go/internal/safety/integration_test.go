@@ -1,8 +1,14 @@
-package safety
+package safety_test
 
 import (
 	"math"
 	"testing"
+
+	"swarm-core-go/internal/core"
+	"swarm-core-go/internal/formation"
+	"swarm-core-go/internal/intelligence"
+	"swarm-core-go/internal/mission"
+	"swarm-core-go/internal/safety"
 )
 
 // TestSwarmMigrationPlatformGoals runs a complete virtual simulation validating all migration goals:
@@ -19,23 +25,23 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 		// ParseCommandIntent is now a safe-only HOLD fallback.
 		// All real NLP is done by ParseIntentWithGemini (requires live API).
 		// Verify the safe fallback always returns HOLD for any input.
-		intent1 := ParseCommandIntent("sweep sector alpha")
+		intent1 := intelligence.ParseCommandIntent("sweep sector alpha")
 		if intent1.Action != "HOLD" {
 			t.Errorf("Safe fallback must always be HOLD, got %+v", intent1)
 		}
 
-		intent2 := ParseCommandIntent("hold fleet position")
+		intent2 := intelligence.ParseCommandIntent("hold fleet position")
 		if intent2.Action != "HOLD" {
 			t.Errorf("Safe fallback must always be HOLD, got %+v", intent2)
 		}
 
-		intent3 := ParseCommandIntent("return and land")
+		intent3 := intelligence.ParseCommandIntent("return and land")
 		if intent3.Action != "HOLD" {
 			t.Errorf("Safe fallback must always be HOLD, got %+v", intent3)
 		}
 
 		// Gibberish also returns HOLD
-		intentFallback := ParseCommandIntent("some completely unrecognized gibberish")
+		intentFallback := intelligence.ParseCommandIntent("some completely unrecognized gibberish")
 		if intentFallback.Action != "HOLD" {
 			t.Errorf("NLP Fallback failed: expected HOLD; got %+v", intentFallback)
 		}
@@ -51,8 +57,8 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 		}
 		totalSearchWidth := 200.0 // 200 meters sector
 
-		width1 := CalculateProportionalWidth("drone-sim-1", activeBatteries, totalSearchWidth)
-		width2 := CalculateProportionalWidth("drone-sim-2", activeBatteries, totalSearchWidth)
+		width1 := formation.CalculateProportionalWidth("drone-sim-1", activeBatteries, totalSearchWidth)
+		width2 := formation.CalculateProportionalWidth("drone-sim-2", activeBatteries, totalSearchWidth)
 
 		if width1 != 140.0 {
 			t.Errorf("Proportional Allocation failed for Drone 1: expected 140m; got %f", width1)
@@ -69,19 +75,19 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 		currentState := "Idle"
 
 		// Preflight is valid from Idle
-		valid, err := ValidateStateTransition(currentState, "Preflight")
+		valid, err := mission.ValidateStateTransition(currentState, "Preflight")
 		if !valid || err != nil {
 			t.Errorf("Idle -> Preflight failed: %v", err)
 		}
 
 		// Transition directly from Executing to Idle must be strictly blocked (requires landing first)
-		valid, err = ValidateStateTransition("Executing", "Idle")
+		valid, err = mission.ValidateStateTransition("Executing", "Idle")
 		if valid || err == nil {
 			t.Error("Safety violation: Direct transition from Executing to Idle must be blocked")
 		}
 
 		// Executing -> Landed: Valid
-		valid, err = ValidateStateTransition("Executing", "Landed")
+		valid, err = mission.ValidateStateTransition("Executing", "Landed")
 		if !valid || err != nil {
 			t.Errorf("Executing -> Landed failed: %v", err)
 		}
@@ -92,14 +98,14 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 	// =========================================================================
 	t.Run("Telemetry-Driven Leader Election & Failover Handover", func(t *testing.T) {
 		// Drones active in swarm
-		drones := []MockDroneState{
+		drones := []core.MockDroneState{
 			{DroneID: "drone-A", Battery: 35, Alt: 1.2},
 			{DroneID: "drone-B", Battery: 85, Alt: 1.5},
 			{DroneID: "drone-C", Battery: 12, Alt: 1.0},
 		}
 
 		// Startup leader election: Drone-B has the highest battery
-		leaderID := ElectSwarmLeader(drones)
+		leaderID := formation.ElectSwarmLeader(drones)
 		if leaderID != "drone-B" {
 			t.Errorf("Expected startup elected leader to be drone-B; got %s", leaderID)
 		}
@@ -108,7 +114,7 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 		droneBBattery := int32(29)
 		droneABattery := int32(80) // Drone-A is now the best candidate
 
-		shouldHandover := EvaluateHandoverNecessity("drone-B", droneBBattery, "drone-A", droneABattery)
+		shouldHandover := formation.EvaluateHandoverNecessity("drone-B", droneBBattery, "drone-A", droneABattery)
 		if !shouldHandover {
 			t.Error("Reelection failed to trigger when leader's battery dropped below 30%")
 		}
@@ -119,13 +125,13 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 	// =========================================================================
 	t.Run("Spatial Offset Solver & Coordinate Smooth Damping", func(t *testing.T) {
 		// Verify Circle coordinates computation
-		circleOffsets := ComputeFormationOffsets("circle", 3, 2.0)
+		circleOffsets := formation.ComputeFormationOffsets("circle", 3, 2.0)
 		if len(circleOffsets) != 3 {
 			t.Errorf("Circle formation offsets failed: expected 3 points, got %d", len(circleOffsets))
 		}
 
 		// Verify V-Shape coordinates computation (key is now v_shape)
-		vOffsets := ComputeFormationOffsets("v_shape", 3, 2.0)
+		vOffsets := formation.ComputeFormationOffsets("v_shape", 3, 2.0)
 		if len(vOffsets) != 3 {
 			t.Errorf("V-shape formation offsets failed: expected 3 points, got %d", len(vOffsets))
 		}
@@ -140,14 +146,14 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 		alpha := 0.8
 
 		// Step 1: Smooth reference transfer (alpha damp)
-		smoothedCoord := SmoothCoordinate(currentCoord, targetReferenceCoord, alpha)
+		smoothedCoord := formation.SmoothCoordinate(currentCoord, targetReferenceCoord, alpha)
 		expectedStep1 := 1.0*0.8 + 10.0*0.2 // 2.8
 		if math.Abs(smoothedCoord-expectedStep1) > 1e-9 {
 			t.Errorf("Decay smoothing failed: Step 1 expected %f, got %f", expectedStep1, smoothedCoord)
 		}
 
 		// Step 2: Continuation towards target reference
-		smoothedCoord = SmoothCoordinate(smoothedCoord, targetReferenceCoord, alpha)
+		smoothedCoord = formation.SmoothCoordinate(smoothedCoord, targetReferenceCoord, alpha)
 		expectedStep2 := 2.8*0.8 + 10.0*0.2 // 4.24
 		if math.Abs(smoothedCoord-expectedStep2) > 1e-9 {
 			t.Errorf("Decay smoothing failed: Step 2 expected %f, got %f", expectedStep2, smoothedCoord)
@@ -159,13 +165,13 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 	// =========================================================================
 	t.Run("Collision Avoidance Spatial Escape & Altimeter Boundaries Lock", func(t *testing.T) {
 		// 1. Separation Threshold scaling formula under 2 m/s velocity
-		thresholdLowSpeed := CalculateSeparationThreshold(1.5)
+		thresholdLowSpeed := safety.CalculateSeparationThreshold(1.5)
 		if thresholdLowSpeed != 0.5 { // base bubble: 50cm
 			t.Errorf("Separation threshold error at 1.5 m/s: expected 0.5m, got %f", thresholdLowSpeed)
 		}
 
 		// Separation Threshold scaling formula exceeding 2 m/s velocity: 50cm + 25cm per m/s exceeding 2.0
-		thresholdHighSpeed := CalculateSeparationThreshold(4.0)
+		thresholdHighSpeed := safety.CalculateSeparationThreshold(4.0)
 		expectedThreshold := 0.5 + 0.25*(4.0-2.0) // 1.0 meter safety bubble
 		if thresholdHighSpeed != expectedThreshold {
 			t.Errorf("Dynamic safety bubble scaling failed at 4.0 m/s: expected %f, got %f", expectedThreshold, thresholdHighSpeed)
@@ -173,7 +179,7 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 
 		// 2. Spatial Avoidance Proximity Breach trigger and Escape repulsion vector
 		// Place Drone A at (0.0, 0.0, 1.0) and Drone B at (0.0, 0.3, 1.0) -> distance = 0.3m (less than 0.5m threshold)
-		breached, escape := VerifyProximityBreach(0.0, 0.0, 1.0, 0.0, 0.3, 1.0, 1.0)
+		breached, escape := safety.VerifyProximityBreach(0.0, 0.0, 1.0, 0.0, 0.3, 1.0, 1.0)
 		if !breached {
 			t.Error("Avoidance Guard failed to trigger proximity breach for 30cm separation")
 		}
@@ -183,12 +189,12 @@ func TestSwarmMigrationPlatformGoals(t *testing.T) {
 		}
 
 		// 3. Altimeter minimum lock
-		safe, err := CheckFlightBoundaries(0.15) // below 20cm
+		safe, err := safety.CheckFlightBoundaries(0.15) // below 20cm
 		if safe || err == "" {
 			t.Error("Altimeter Lock failed: accepted unsafe altitude below 20cm")
 		}
 
-		safe, err = CheckFlightBoundaries(1.5) // safe
+		safe, err = safety.CheckFlightBoundaries(1.5) // safe
 		if !safe || err != "" {
 			t.Errorf("Altimeter Lock error on safe coordinate: %s", err)
 		}
