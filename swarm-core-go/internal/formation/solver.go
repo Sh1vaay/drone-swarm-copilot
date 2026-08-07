@@ -158,7 +158,7 @@ func ComputeFormationOffsets(shape string, numDrones int, radius float64) []core
 		phi := math.Pi * (3.0 - math.Sqrt(5.0))
 		for i := 0; i < numDrones; i++ {
 			y := 1.0 - (float64(i)/math.Max(float64(numDrones-1), 1.0))*2.0
-			r := math.Sqrt(1.0 - y*y) * radius
+			r := math.Sqrt(1.0-y*y) * radius
 			theta := phi * float64(i)
 			offsets[i] = core.Waypoint{
 				X: math.Cos(theta) * r,
@@ -175,12 +175,18 @@ func ComputeFormationOffsets(shape string, numDrones int, radius float64) []core
 			v := math.Mod(t*13.0, 1.0)*2.0 - 1.0
 			x, y, z := 0.0, 0.0, 0.0
 			switch face {
-			case 0: x, y, z = 1, u, v
-			case 1: x, y, z = -1, u, v
-			case 2: x, y, z = u, 1, v
-			case 3: x, y, z = u, -1, v
-			case 4: x, y, z = u, v, 1
-			case 5: x, y, z = u, v, -1
+			case 0:
+				x, y, z = 1, u, v
+			case 1:
+				x, y, z = -1, u, v
+			case 2:
+				x, y, z = u, 1, v
+			case 3:
+				x, y, z = u, -1, v
+			case 4:
+				x, y, z = u, v, 1
+			case 5:
+				x, y, z = u, v, -1
 			}
 			offsets[i] = core.Waypoint{X: x * radius, Y: y * radius, Z: z * radius}
 		}

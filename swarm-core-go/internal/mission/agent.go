@@ -325,7 +325,7 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 			Z: targetZ,
 		}
 	}
-	
+
 	a.Target = a.applyObstacleRepulsion(a.Target, globalState)
 }
 
@@ -349,7 +349,7 @@ func (a *Agent) applyObstacleRepulsion(target core.Waypoint, globalState GlobalS
 			}
 		}
 	}
-	
+
 	for _, mem := range globalState.Memory {
 		if mem.Type == "DANGER" {
 			dx := a.Position.X - mem.X
@@ -471,7 +471,7 @@ func (a *Agent) computeBoidsTarget(neighbors []core.AgentSnapshot, radius float6
 		cohX /= float64(count)
 		cohY /= float64(count)
 		cohZ /= float64(count)
-		
+
 		cohX = cohX - a.Position.X
 		cohY = cohY - a.Position.Y
 		cohZ = cohZ - a.Position.Z
@@ -479,9 +479,9 @@ func (a *Agent) computeBoidsTarget(neighbors []core.AgentSnapshot, radius float6
 
 	wSep, wAlign, wCoh := 1.5, 1.0, 1.0
 
-	vx := a.Velocity.X + (sepX*wSep) + (alignX*wAlign) + (cohX*wCoh)
-	vy := a.Velocity.Y + (sepY*wSep) + (alignY*wAlign) + (cohY*wCoh)
-	vz := a.Velocity.Z + (sepZ*wSep) + (alignZ*wAlign) + (cohZ*wCoh)
+	vx := a.Velocity.X + (sepX * wSep) + (alignX * wAlign) + (cohX * wCoh)
+	vy := a.Velocity.Y + (sepY * wSep) + (alignY * wAlign) + (cohY * wCoh)
+	vz := a.Velocity.Z + (sepZ * wSep) + (alignZ * wAlign) + (cohZ * wCoh)
 
 	worldCenter := core.Waypoint{X: 3.0, Y: 3.0, Z: altitude}
 	vx += (worldCenter.X - a.Position.X) * 0.1
