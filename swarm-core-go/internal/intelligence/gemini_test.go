@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
-	
+
 	"swarm-core-go/internal/core"
 )
 
