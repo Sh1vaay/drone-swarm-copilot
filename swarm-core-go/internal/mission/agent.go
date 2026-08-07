@@ -261,10 +261,8 @@ func (a *Agent) decide(globalState GlobalState, hazard bool, escape core.Vector3
 		}
 	}
 
-	isLeader := globalState.LeaderID == a.ID
-
 	// Only enter flocking mode when the intent is explicitly FLOCK.
-	// Previously, the extra clause `(!isLeader && useGeminiCoords)` caused non-leader drones
+	// A prior clause `(!isLeader && useGeminiCoords)` caused non-leader drones
 	// to flock for any Gemini-coordinated intent (e.g. CIRCLE, LINE), overriding their
 	// formation positions - a behavioural bug that ignored the actual intent action.
 	if intent.Action == "flock" || intent.Action == "FLOCK" {
