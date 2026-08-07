@@ -22,8 +22,12 @@ jobs:
         with:
           go-version: '1.22'
           check-latest: true
-          cache: true
-          cache-dependency-path: swarm-core-go/go.sum
+
+      - name: Resolve Dependencies & Checksums
+        working-directory: swarm-core-go
+        run: |
+          go mod tidy
+          go mod download
 
       - name: Verify Code Formatting & Go Vet
         working-directory: swarm-core-go
