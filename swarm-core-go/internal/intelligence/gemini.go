@@ -145,8 +145,12 @@ func ParseIntentWithGemini(ctx context.Context, rawCommand string, telemetryData
 
 	client, err := InitGeminiClient()
 	if err != nil || client == nil {
+		// No API key or client init failure: return a safe HOLD rather than
+		// delegating to ParseCommandIntent. The test contract requires HOLD here
+		// because without a verified Gemini session the system has no authorised
+		// intent - executing keyword-parsed commands on an unconfigured path is unsafe.
 		log.Printf("Gemini unavailable, HOLD fallback: %v", err)
-		return ParseCommandIntent(sanitised)
+		return core.ParsedIntent{Action: "HOLD"}
 	}
 
 	tacticalObjective := CallMissionAgent(ctx, client, sanitised)
