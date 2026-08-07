@@ -10,8 +10,8 @@ permissions:
   contents: read
 
 jobs:
-  validate:
-    name: Build & Test Suite
+  validate-swarm-core:
+    name: Swarm Core (Go) Build & Test Suite
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Source Code
