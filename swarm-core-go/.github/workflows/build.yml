@@ -1,0 +1,40 @@
+name: Build, Test & Security Audit
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Build & Test Suite
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go 1.22
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.22'
+          check-latest: true
+          cache: true
+          cache-dependency-path: swarm-core-go/go.sum
+
+      - name: Verify Code Formatting & Go Vet
+        working-directory: swarm-core-go
+        run: |
+          go vet ./...
+          test -z "$(gofmt -l .)" || (echo "Unformatted Go code found:" && gofmt -d . && exit 1)
+
+      - name: Run Unit & Integration Tests (with Race Detector)
+        working-directory: swarm-core-go
+        run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+
+      - name: Validate Binary Compilation
+        working-directory: swarm-core-go
+        run: CGO_ENABLED=0 go build -v -ldflags="-s -w" -o /dev/null ./cmd/swarm-server

@@ -1,0 +1,28 @@
+# Auto-detect text files, ensure they have LF line endings on checkout
+* text=auto eol=lf
+
+# Source code files
+*.go text
+*.py text
+*.js text
+*.html text
+*.css text
+*.md text
+*.json text
+*.yaml text
+*.yml text
+*.toml text
+
+# Shell scripts must always have LF line endings
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Batch scripts must always have CRLF line endings
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Git LFS rules for large media/demo files
+client/demos/**/*.jpg filter=lfs diff=lfs merge=lfs -text
+client/demos/**/*.json filter=lfs diff=lfs merge=lfs -text
+client/demos/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
+client/demos/**/*.mov filter=lfs diff=lfs merge=lfs -text

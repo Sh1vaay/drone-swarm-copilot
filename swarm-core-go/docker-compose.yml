@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  swarm-server:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - WS_AUTH_TOKEN=${WS_AUTH_TOKEN}
+      - HTTP_ADDR=:8080
+    restart: unless-stopped
