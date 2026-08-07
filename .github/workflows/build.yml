@@ -20,7 +20,7 @@ jobs:
       - name: Set up Go 1.22
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: '1.22.x'
           check-latest: true
 
       - name: Resolve Dependencies & Checksums
@@ -37,7 +37,17 @@ jobs:
 
       - name: Run Unit & Integration Tests (with Race Detector)
         working-directory: swarm-core-go
-        run: go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+        # Scope -coverprofile to packages that have test files only.
+        # Running ./... with -coverprofile causes "no such tool covdata" errors
+        # for packages with no test files (cmd/swarm-server, internal/core,
+        # internal/transport/grpc) because go test tries to merge profiles via
+        # the covdata tool internally. Listing tested packages explicitly avoids this.
+        run: |
+          go test -v -race -covermode=atomic -coverprofile=coverage.out \
+            ./internal/formation/... \
+            ./internal/intelligence/... \
+            ./internal/mission/... \
+            ./internal/safety/...
 
       - name: Validate Binary Compilation
         working-directory: swarm-core-go
